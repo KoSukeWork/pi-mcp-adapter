@@ -1,6 +1,6 @@
 {
   "name": "pi-mcp-adapter",
-  "version": "2.26.1",
+  "version": "2.26.2",
   "description": "MCP (Model Context Protocol) adapter extension for Pi coding agent",
   "type": "module",
   "types": "./index.ts",
@@ -55,7 +55,7 @@
   ],
   "pi": {
     "extensions": [
-      "./bootstrap.ts"
+      "./dist/bootstrap.js"
     ],
     "skills": [
       "./skills"
@@ -131,7 +131,8 @@
     "skills",
     "README.md",
     "CHANGELOG.md",
-    "LICENSE"
+    "LICENSE",
+    "dist"
   ],
   "dependencies": {
     "@modelcontextprotocol/client": "2.0.0",
