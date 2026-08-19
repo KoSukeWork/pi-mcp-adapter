@@ -55,7 +55,7 @@
   ],
   "pi": {
     "extensions": [
-      "./dist/bootstrap.js"
+      "./bootstrap.ts"
     ],
     "skills": [
       "./skills"
