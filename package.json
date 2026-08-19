@@ -131,8 +131,7 @@
     "skills",
     "README.md",
     "CHANGELOG.md",
-    "LICENSE",
-    "dist"
+    "LICENSE"
   ],
   "dependencies": {
     "@modelcontextprotocol/client": "2.0.0",
