@@ -8,7 +8,11 @@ export default function (pi: ExtensionAPI) {
 	});
 	installDeferred(pi, () => import("./index.js"), {
 		commands: [
-			{ name: "mcp", description: "MCP status, tools, prompts, and setup" },
+			{
+				name: "mcp",
+				description: "MCP status, tools, prompts, and setup",
+				completions: ["reconnect", "tools", "prompts", "setup", "logout", "disable", "enable", "status"],
+			},
 			{ name: "mcp-auth", description: "Authenticate an MCP server" },
 		],
 	});
