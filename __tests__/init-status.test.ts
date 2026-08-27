@@ -4,10 +4,17 @@ import { formatMcpStatus } from "../utils.ts";
 import type { McpSettings } from "../types.ts";
 
 function createState(ui: unknown, settings: Partial<McpSettings> = {}) {
+  const getAllConnections = vi.fn(() => new Map());
   return {
     ui,
     config: { settings, mcpServers: { demo: { command: "demo" } } },
-    manager: { getAllConnections: vi.fn(() => new Map()) },
+    manager: {
+      getAllConnections,
+      getConnection: (name: string) => getAllConnections().get(name),
+    },
+    toolMetadata: new Map(),
+    failureTracker: new Map(),
+    resourceCounts: new Map(),
   } as any;
 }
 
@@ -97,5 +104,22 @@ describe("updateStatusBar", () => {
     updateStatusBar(createState({ setStatus }, { mcpFooterStatus: "off" }));
 
     expect(setStatus).toHaveBeenCalledWith("mcp", undefined);
+  });
+
+  it("publishes a parseable RPC widget even when the footer is off", () => {
+    const setStatus = vi.fn();
+    const setWidget = vi.fn();
+    const state = createState({ setStatus, setWidget }, { mcpFooterStatus: "off" });
+    state.manager.getAllConnections.mockReturnValue(new Map([["demo", { status: "connected" }]]));
+    state.toolMetadata = new Map([["demo", [{ name: "a" }, { name: "b" }]]]);
+
+    updateStatusBar(state);
+
+    expect(setStatus).toHaveBeenCalledWith("mcp", undefined);
+    expect(setWidget).toHaveBeenCalledWith(
+      "mcp-status",
+      ["MCP 1/1 connected", "✓ demo\tconnected\t2 tools"],
+      { placement: "aboveEditor" },
+    );
   });
 });

@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Published a parseable `setWidget("mcp-status")` snapshot for RPC hosts, and skipped the TUI `/mcp` overlay outside TUI mode so desktop can list servers without a custom terminal panel.
+
 ### Fixed
 - Recovered MCP gateway requests nested inside proxy `args` instead of silently showing status, and now rejects invalid nested gateway requests with guidance. Thanks to [@ibrmora](https://github.com/ibrmora) for #363.
 

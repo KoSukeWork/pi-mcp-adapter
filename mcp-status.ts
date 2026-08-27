@@ -2,6 +2,7 @@ import type { McpExtensionState } from "./state.ts";
 import {
   MCP_STATUS_EVENT,
   MCP_STATUS_SNAPSHOT_VERSION,
+  type McpServerRuntimeStatus,
   type McpServerStatusSnapshot,
   type McpStatusSnapshot,
 } from "./types.ts";
@@ -33,10 +34,10 @@ export function createMcpStatusSnapshot(state: McpExtensionState): McpStatusSnap
     const disabled = definition?.disabled === true;
     const connection = disabled ? undefined : state.manager.getConnection(name);
     const metadata = disabled ? undefined : state.toolMetadata.get(name);
-    const toolCount = metadata?.length ?? (connection?.status === "connected" ? connection.tools.length : 0);
+    const toolCount = metadata?.length ?? (connection?.status === "connected" ? connection.tools?.length ?? 0 : 0);
     const resourceCount = disabled
       ? undefined
-      : state.resourceCounts?.get(name) ?? (connection?.status === "connected" ? connection.resources.length : undefined);
+      : state.resourceCounts?.get(name) ?? (connection?.status === "connected" ? connection.resources?.length : undefined);
     const failedAgoSeconds = disabled ? undefined : getActiveFailureAgeSeconds(state, name);
 
     let status: McpServerStatusSnapshot["status"] = "not-connected";
@@ -103,6 +104,30 @@ export function publishMcpStatusShutdown(events: McpStatusEventBus | undefined):
   } catch {
     // Event consumers must not be able to interrupt MCP shutdown.
   }
+}
+
+const STATUS_GLYPH: Record<McpServerRuntimeStatus, string> = {
+  connected: "✓",
+  cached: "◇",
+  failed: "✗",
+  "needs-auth": "⚠",
+  "not-connected": "○",
+  disabled: "⊘",
+};
+
+/** String-array widget for RPC hosts (Pi Desktop). TUI still uses the footer. */
+export function formatMcpWidgetLines(snapshot: McpStatusSnapshot): string[] | undefined {
+  if (snapshot.servers.length === 0) return undefined;
+  const enabled = snapshot.servers.length - snapshot.disabledCount;
+  const lines = [`MCP ${snapshot.connectedCount}/${enabled} connected`];
+  for (const server of snapshot.servers) {
+    const extra =
+      server.status === "failed" && server.failedAgoSeconds != null
+        ? `failed ${server.failedAgoSeconds}s ago`
+        : `${server.toolCount} tools`;
+    lines.push(`${STATUS_GLYPH[server.status]} ${server.name}\t${server.status}\t${extra}`);
+  }
+  return lines;
 }
 
 export type { McpServerStatusSnapshot, McpStatusSnapshot } from "./types.ts";

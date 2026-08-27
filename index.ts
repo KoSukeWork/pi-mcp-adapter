@@ -7,7 +7,7 @@ import type { TSchema } from "typebox";
 import { showStatus, showTools, showPrompts, reconnectServer, reconnectServers, authenticateServer, logoutServer, openMcpAuthPanel, openMcpPanel, openMcpSetup } from "./commands.ts";
 import { cloneMcpConfig, loadMcpConfig, writeProjectServerDisabledOverride } from "./config.ts";
 import { buildProxyDescription, createDirectToolExecutor, getMissingConfiguredDirectToolServers, resolveDirectTools } from "./direct-tools.ts";
-import { flushMetadataCache, initializeMcp, updateStatusBar } from "./init.ts";
+import { flushMetadataCache, initializeMcp, isTuiMode, updateStatusBar } from "./init.ts";
 import { loadMetadataCache, type MetadataCache } from "./metadata-cache.ts";
 import { createPromptCommand, resolveCachedPrompts } from "./prompts.ts";
 import { logger } from "./logger.ts";
@@ -574,8 +574,10 @@ function installMcpAdapter(pi: ExtensionAPI, options: McpAdapterOptions) {
         default:
           if (commandCtx.hasUI) {
             commandOwner?.throwIfInactive();
-            if (programmaticConfig) {
-              commandCtx.ui?.notify("MCP status is shown from the in-memory SDK config; configuration discovery is unavailable.", "info");
+            if (programmaticConfig || !isTuiMode(commandCtx)) {
+              if (programmaticConfig) {
+                commandCtx.ui?.notify("MCP status is shown from the in-memory SDK config; configuration discovery is unavailable.", "info");
+              }
               await showStatus(state, commandCtx);
               break;
             }

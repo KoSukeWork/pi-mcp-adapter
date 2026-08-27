@@ -35,7 +35,7 @@ import {
   isAbortError,
   type McpRuntimeOwner,
 } from "./runtime-owner.ts";
-import { publishMcpStatusSnapshot } from "./mcp-status.ts";
+import { createMcpStatusSnapshot, formatMcpWidgetLines, publishMcpStatusSnapshot } from "./mcp-status.ts";
 
 const FAILURE_BACKOFF_MS = 60 * 1000;
 const MAX_FAILURE_MESSAGE_CHARS = 8 * 1024;
@@ -545,6 +545,9 @@ export function updateStatusBar(state: McpExtensionState): void {
   publishMcpStatusSnapshot(state);
   const ui = state.ui;
   if (!ui) return;
+  const snapshot = createMcpStatusSnapshot(state);
+  const widgetLines = formatMcpWidgetLines(snapshot);
+  ui.setWidget?.("mcp-status", widgetLines, { placement: "aboveEditor" });
   const entries = Object.entries(state.config.mcpServers);
   const disabledCount = entries.filter(([, definition]) => isServerDisabled(definition)).length;
   const enabledCount = entries.length - disabledCount;
