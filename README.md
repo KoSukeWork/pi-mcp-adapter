@@ -728,6 +728,12 @@ Advertised tool `outputSchema` values support JSON Schema draft-07 and 2020-12. 
 - Keep-alive servers get health checks and auto-reconnect
 - Specific tools can be promoted from the proxy to first-class Pi tools via `directTools` config, so the LLM sees them directly instead of having to search
 
+### Persistent Agent Mail identity
+
+For MCP Agent Mail and compatible servers, the adapter adds a reserved, model-inaccessible `_meta["io.github.mcp-agent-mail/identity"]` object to direct, proxy, and script-origin tool calls. It combines Pi's durable session ID with a high-entropy per-server client principal stored in the operating-system credential store. The principal is separate from OAuth credentials and rotates if the configured server name is repointed to a different URL, socket, or stdio command.
+
+Servers can return a sensitive `_client_action` requesting local browser confirmation when native MCP elicitation is unavailable. The adapter accepts only HTTPS or loopback HTTP confirmation URLs, opens the page on the client machine, and removes the action and URL recursively from structured content, text-encoded JSON, details, and UI results before model-facing processing. Request metadata cannot override the reserved identity namespace; if secure credential storage is unavailable, the adapter omits trusted identity metadata rather than sending an ephemeral or plaintext fallback credential.
+
 ## Limitations
 
 - Cross-session server sharing not yet implemented (each Pi session runs its own server processes)

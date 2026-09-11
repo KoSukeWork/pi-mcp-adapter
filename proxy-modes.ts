@@ -7,6 +7,7 @@ import { getServerPrefix, isServerDisabled, parseUiPromptHandoff } from "./types
 import { lazyConnect, markKeepAliveAfterConnect, notifyToolMetadataUpdated, updateServerMetadata, updateMetadataCache, getFailureAgeSeconds, updateStatusBar, clearFailure, recordFailure } from "./init.ts";
 import { abortable, throwIfAborted } from "./abort.ts";
 import { combineAbortSignals, isAbortError } from "./runtime-owner.ts";
+import { consumeSensitiveBrowserAction, mergeTrustedConversationMeta } from "./identity-context.ts";
 import { buildToolMetadata, getToolNames, findToolByName, formatSchema } from "./tool-metadata.ts";
 import { renderTsShape } from "./ts-shape.ts";
 import { reconstructPromptMetadata } from "./metadata-cache.ts";
@@ -1225,7 +1226,7 @@ export async function executeCall(
         })
       : null;
 
-    const result = await withSessionRecovery<ClientCallToolResult>(
+    const rawResult = await withSessionRecovery<ClientCallToolResult>(
       {
         manager: state.manager,
         config: state.config,
@@ -1236,9 +1237,13 @@ export async function executeCall(
       (conn) => abortable(conn.client.callTool({
         name: toolMeta.originalName,
         arguments: args ?? {},
-        _meta: uiSession?.requestMeta,
+        _meta: mergeTrustedConversationMeta(state, serverName, uiSession?.requestMeta),
       }, requestOptions), ownedSignal),
     );
+    const result = await consumeSensitiveBrowserAction(
+      state,
+      rawResult as unknown as Record<string, unknown>,
+    ) as unknown as ClientCallToolResult;
 
     if (toolMeta.uiResourceUri) {
       uiSession?.sendToolResult(result as unknown as import("@modelcontextprotocol/client").CallToolResult);

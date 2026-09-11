@@ -2,7 +2,7 @@ import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-a
 import type { ConsentManager } from "./consent-manager.ts";
 import type { McpLifecycleManager } from "./lifecycle.ts";
 import type { McpServerManager } from "./server-manager.ts";
-import type { AuthStorageOptions } from "./mcp-auth.ts";
+import type { AgentMailClientIdentity, AuthStorageOptions } from "./mcp-auth.ts";
 import type { ToolMetadata, PromptMetadata, McpConfig, UiSessionMessages, UiStreamSummary } from "./types.ts";
 import type { UiResourceHandler } from "./ui-resource-handler.ts";
 import type { UiServerHandle } from "./ui-server.ts";
@@ -44,6 +44,10 @@ export interface McpExtensionState {
   programmaticConfig?: boolean;
   oauthRuntime: McpOAuthRuntime;
   authStorageOptions: AuthStorageOptions;
+  /** Stable Pi conversation UUID; never sourced from model tool arguments. */
+  conversationUid?: string;
+  /** Per-server credentials loaded from the operating system credential store. */
+  agentMailClientIdentities?: Map<string, AgentMailClientIdentity>;
   failureTracker: Map<string, number>;
   failureMessages: Map<string, string>;
   /** Session-only approvals keyed by server and original tool name. */

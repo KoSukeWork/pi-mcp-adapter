@@ -103,6 +103,7 @@ export async function initializeMcp(
   const cwd = ctx.cwd;
   const hasUI = ctx.hasUI;
   const mode = ctx.mode;
+  const conversationUid = ctx.sessionManager?.getSessionId?.();
   const rawUi = hasUI ? ctx.ui : undefined;
   const modelRegistry = ctx.modelRegistry;
   const initialSignal = ctx.signal;
@@ -164,6 +165,8 @@ export async function initializeMcp(
     programmaticConfig: options.config !== undefined,
     oauthRuntime,
     authStorageOptions,
+    conversationUid,
+    agentMailClientIdentities: new Map(),
     failureTracker,
     failureMessages,
     approvedToolCalls,

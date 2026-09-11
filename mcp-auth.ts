@@ -11,7 +11,7 @@
  */
 
 import { spawnSync } from 'child_process';
-import { createHash } from 'crypto';
+import { createHash, randomBytes, randomUUID } from 'crypto';
 import { createRequire } from 'module';
 import { readFileSync, existsSync, rmSync } from 'fs';
 import { dirname, join } from 'path';
@@ -74,9 +74,17 @@ export interface StoredClientInfo {
 export interface AuthEntry {
   tokens?: StoredTokens;
   clientInfo?: StoredClientInfo;
+  agentMailIdentity?: AgentMailClientIdentity;
   codeVerifier?: string;
   oauthState?: string;
   serverUrl?: string; // Track the URL these credentials are for
+}
+
+/** Model-inaccessible client credential used for MCP Agent Mail bindings. */
+export interface AgentMailClientIdentity {
+  clientUid: string;
+  clientSecret: string;
+  serverFingerprint?: string;
 }
 
 export interface AuthStorageOptions {
@@ -472,15 +480,45 @@ function toAuthEntry(value: unknown): AuthEntry | undefined {
 
   const tokens = entry.tokens === undefined ? undefined : toStoredTokens(entry.tokens);
   const clientInfo = entry.clientInfo === undefined ? undefined : toStoredClientInfo(entry.clientInfo);
-  if ((entry.tokens !== undefined && !tokens) || (entry.clientInfo !== undefined && !clientInfo)) return undefined;
+  const agentMailIdentity = entry.agentMailIdentity === undefined
+    ? undefined
+    : toAgentMailClientIdentity(entry.agentMailIdentity);
+  if (
+    (entry.tokens !== undefined && !tokens)
+    || (entry.clientInfo !== undefined && !clientInfo)
+    || (entry.agentMailIdentity !== undefined && !agentMailIdentity)
+  ) return undefined;
 
   const authEntry: AuthEntry = {};
   if (tokens) authEntry.tokens = tokens;
   if (clientInfo) authEntry.clientInfo = clientInfo;
+  if (agentMailIdentity) authEntry.agentMailIdentity = agentMailIdentity;
   if (codeVerifier !== undefined) authEntry.codeVerifier = codeVerifier;
   if (oauthState !== undefined) authEntry.oauthState = oauthState;
   if (serverUrl !== undefined) authEntry.serverUrl = serverUrl;
   return authEntry;
+}
+
+function toAgentMailClientIdentity(value: unknown): AgentMailClientIdentity | undefined {
+  const identity = toRecord(value);
+  if (
+    !identity
+    || typeof identity.clientUid !== 'string'
+    || typeof identity.clientSecret !== 'string'
+  ) {
+    return undefined;
+  }
+  if (identity.clientUid.length < 8 || identity.clientUid.length > 128) return undefined;
+  if (identity.clientSecret.length < 32 || identity.clientSecret.length > 512) return undefined;
+  const serverFingerprint = optionalString(identity.serverFingerprint);
+  if (serverFingerprint === null) return undefined;
+  if (serverFingerprint !== undefined && !/^[a-f0-9]{64}$/.test(serverFingerprint)) return undefined;
+  const result: AgentMailClientIdentity = {
+    clientUid: identity.clientUid,
+    clientSecret: identity.clientSecret,
+  };
+  if (serverFingerprint !== undefined) result.serverFingerprint = serverFingerprint;
+  return result;
 }
 
 function toStoredTokens(value: unknown): StoredTokens | undefined {
@@ -767,6 +805,40 @@ function readAuthEntry(
  */
 export function getAuthEntry(serverName: string, options?: AuthStorageOptions): AuthEntry | undefined {
   return readAuthEntry(serverName, options);
+}
+
+/**
+ * Return one stable, high-entropy MCP Agent Mail client principal per server.
+ *
+ * The credential is stored in its own operating-system credential-store
+ * record, separate from OAuth material. It is never returned by an MCP tool
+ * or exposed to the model-facing tool argument/result channel.
+ */
+export function getOrCreateAgentMailClientIdentity(
+  serverName: string,
+  serverFingerprint: string,
+  options?: AuthStorageOptions,
+): AgentMailClientIdentity {
+  if (!/^[a-f0-9]{64}$/.test(serverFingerprint)) {
+    throw new OAuthCredentialStoreError(
+      `Cannot create a trusted MCP client identity for ${serverName}: invalid server fingerprint`,
+      'write',
+      undefined,
+    );
+  }
+  const identityStoreName = `${serverName}::agent-mail-identity-v1`;
+  const entry = getAuthEntry(identityStoreName, options) ?? {};
+  if (entry.agentMailIdentity?.serverFingerprint === serverFingerprint) {
+    return structuredClone(entry.agentMailIdentity);
+  }
+  const identity: AgentMailClientIdentity = {
+    clientUid: randomUUID(),
+    clientSecret: randomBytes(32).toString('base64url'),
+    serverFingerprint,
+  };
+  entry.agentMailIdentity = identity;
+  saveAuthEntry(identityStoreName, entry, undefined, options);
+  return structuredClone(identity);
 }
 
 /**

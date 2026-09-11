@@ -79,6 +79,7 @@
     "tool-approval.ts",
     "init.ts",
     "ui-session.ts",
+    "identity-context.ts",
     "proxy-modes.ts",
     "direct-tools.ts",
     "commands.ts",
