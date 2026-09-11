@@ -18,6 +18,7 @@ import { authenticate, supportsOAuth } from "./mcp-auth-flow.ts";
 import { formatAuthRequiredMessage, resolveServerUrl, truncateAtWord } from "./utils.ts";
 import { SessionRecoveryAuthRequiredError, withSessionRecovery } from "./session-recovery.ts";
 import { combineAbortSignals, isAbortError } from "./runtime-owner.ts";
+import { consumeSensitiveBrowserAction, mergeTrustedConversationMeta } from "./identity-context.ts";
 import { ensureToolCallApproved } from "./tool-approval.ts";
 
 type ClientCallToolResult = Awaited<ReturnType<Client["callTool"]>>;
@@ -517,7 +518,7 @@ export function createDirectToolExecutor(
           })
         : null;
 
-      const result = await withSessionRecovery<ClientCallToolResult>(
+      const rawResult = await withSessionRecovery<ClientCallToolResult>(
         {
           manager: state.manager,
           config: state.config,
@@ -528,9 +529,13 @@ export function createDirectToolExecutor(
         (conn) => abortable(conn.client.callTool({
           name: spec.originalName,
           arguments: params ?? {},
-          _meta: uiSession?.requestMeta,
+          _meta: mergeTrustedConversationMeta(state, spec.serverName, uiSession?.requestMeta),
         }, requestOptions), ownedSignal),
       );
+      const result = await consumeSensitiveBrowserAction(
+        state,
+        rawResult as unknown as Record<string, unknown>,
+      ) as unknown as ClientCallToolResult;
       uiSession?.sendToolResult(result as unknown as import("@modelcontextprotocol/client").CallToolResult);
 
       if (result.isError) {

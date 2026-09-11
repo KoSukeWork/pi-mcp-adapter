@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - Published a parseable `setWidget("mcp-status")` snapshot for RPC hosts, and skipped the TUI `/mcp` overlay outside TUI mode so desktop can list servers without a custom terminal panel.
+- Added secure per-server MCP client principals and trusted per-Pi-session conversation metadata for persistent Agent Mail identities, including principal rotation when a configured server is repointed and local consumption of secret-bearing browser confirmation actions.
 
 ### Fixed
 - Deferred runtime install failures now include the first load error (for example a missing dependency) instead of reporting only a missing factory, and a factory that already started executing is never re-run.
