@@ -11,7 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Published a parseable `setWidget("mcp-status")` snapshot for RPC hosts, and skipped the TUI `/mcp` overlay outside TUI mode so desktop can list servers without a custom terminal panel.
 
 ### Fixed
-- Isolated Vitest runs from the live user profile on Windows. Tests now stub `USERPROFILE` as well as `HOME`, because `os.homedir()` ignores `HOME` there; running the suite no longer merge-adds Cursor/Codex `imports` into `~/.pi/agent/mcp.json`.
+- Isolated Vitest runs from the live user profile on Windows. Tests now redirect `USERPROFILE`, `HOME`, `PI_CODING_AGENT_DIR`, and rebranded agent-dir overrides, because each can outrank another when resolving Pi-owned files; running the suite no longer merge-adds Cursor/Codex `imports` into a live `mcp.json`, and setup-created temporary homes are removed after use.
 - Deferred runtime install failures now include the first load error (for example a missing dependency) instead of reporting only a missing factory, and a factory that already started executing is never re-run.
 - Deferred loading is preserved: startup events (resources_discover, project_trust) are registered only when the bootstrap declares startupEvents, and factory on()/registerCommand() registrations commit only after the factory completes.
 - Deferred session_start replay now uses the latest event received while an asynchronous factory is installing, and replay handlers stay uncommitted until the pending event is drained so events arriving mid-replay cannot overtake the replayed one.
