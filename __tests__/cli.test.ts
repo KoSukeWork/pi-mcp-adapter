@@ -3,6 +3,7 @@ import { existsSync, mkdtempSync, mkdirSync, readFileSync, symlinkSync, writeFil
 import { dirname, join, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
 import { tmpdir } from "node:os";
+import { restoreHomeEnv, setTestHome, snapshotHomeEnv } from "./test-home.ts";
 
 function writeJson(path: string, value: unknown): void {
   mkdirSync(dirname(path), { recursive: true });
@@ -10,7 +11,7 @@ function writeJson(path: string, value: unknown): void {
 }
 
 describe("cli init helper", () => {
-  const originalHome = process.env.HOME;
+  const originalHomeEnv = snapshotHomeEnv();
   const originalAgentDir = process.env.PI_CODING_AGENT_DIR;
   const originalPackageDir = process.env.PI_PACKAGE_DIR;
   const originalArcAgentDir = process.env.ARC_CODING_AGENT_DIR;
@@ -21,7 +22,7 @@ describe("cli init helper", () => {
   });
 
   afterEach(() => {
-    process.env.HOME = originalHome;
+    restoreHomeEnv(originalHomeEnv);
     if (originalAgentDir === undefined) {
       delete process.env.PI_CODING_AGENT_DIR;
     } else {
@@ -43,7 +44,7 @@ describe("cli init helper", () => {
   it("adds detected host imports to the Pi config", async () => {
     const home = mkdtempSync(join(tmpdir(), "pi-mcp-cli-home-"));
     const project = mkdtempSync(join(tmpdir(), "pi-mcp-cli-project-"));
-    process.env.HOME = home;
+    setTestHome(home);
     process.chdir(project);
 
     writeJson(join(home, ".claude", "mcp.json"), {
@@ -70,7 +71,7 @@ describe("cli init helper", () => {
   it("detects TOML-only Codex config during dry-run", async () => {
     const home = mkdtempSync(join(tmpdir(), "pi-mcp-cli-codex-home-"));
     const project = mkdtempSync(join(tmpdir(), "pi-mcp-cli-codex-project-"));
-    process.env.HOME = home;
+    setTestHome(home);
     process.chdir(project);
 
     const codexConfigPath = join(home, ".codex", "config.toml");
@@ -92,7 +93,7 @@ describe("cli init helper", () => {
   it("loads existing Pi config as JSONC and lists .agents standard paths", async () => {
     const home = mkdtempSync(join(tmpdir(), "pi-mcp-cli-jsonc-home-"));
     const project = mkdtempSync(join(tmpdir(), "pi-mcp-cli-jsonc-project-"));
-    process.env.HOME = home;
+    setTestHome(home);
     process.chdir(project);
 
     mkdirSync(join(home, ".pi", "agent"), { recursive: true });
@@ -120,7 +121,7 @@ describe("cli init helper", () => {
   it("explicitly enables host fallback discovery without changing external files", async () => {
     const home = mkdtempSync(join(tmpdir(), "pi-mcp-cli-discovery-home-"));
     const project = mkdtempSync(join(tmpdir(), "pi-mcp-cli-discovery-project-"));
-    process.env.HOME = home;
+    setTestHome(home);
     process.chdir(project);
 
     const hostPath = join(home, ".cursor", "mcp.json");
@@ -143,7 +144,7 @@ describe("cli init helper", () => {
     const home = mkdtempSync(join(tmpdir(), "pi-mcp-cli-home-"));
     const agentDir = mkdtempSync(join(tmpdir(), "pi-mcp-cli-agent-"));
     const project = mkdtempSync(join(tmpdir(), "pi-mcp-cli-project-"));
-    process.env.HOME = home;
+    setTestHome(home);
     process.env.PI_CODING_AGENT_DIR = agentDir;
     process.chdir(project);
 
@@ -175,7 +176,7 @@ describe("cli init helper", () => {
     const packageDir = mkdtempSync(join(tmpdir(), "pi-mcp-cli-branded-package-"));
     const agentDir = mkdtempSync(join(tmpdir(), "pi-mcp-cli-branded-agent-"));
     const project = mkdtempSync(join(tmpdir(), "pi-mcp-cli-branded-project-"));
-    process.env.HOME = home;
+    setTestHome(home);
     process.env.PI_PACKAGE_DIR = packageDir;
     process.env.ARC_CODING_AGENT_DIR = agentDir;
     process.chdir(project);
@@ -206,6 +207,7 @@ describe("cli init helper", () => {
       env: {
         ...process.env,
         HOME: home,
+        USERPROFILE: home,
         PI_CODING_AGENT_DIR: join(home, ".pi", "agent"),
       },
       encoding: "utf-8",

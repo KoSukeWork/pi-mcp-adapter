@@ -2,9 +2,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { existsSync, mkdtempSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
+import { restoreHomeEnv, setTestHome, snapshotHomeEnv } from "./test-home.ts";
 
 describe("Pi agent dir paths", () => {
-  const originalHome = process.env.HOME;
+  const originalHomeEnv = snapshotHomeEnv();
   const originalAgentDir = process.env.PI_CODING_AGENT_DIR;
   const originalOAuthDir = process.env.MCP_OAUTH_DIR;
   const originalPackageDir = process.env.PI_PACKAGE_DIR;
@@ -16,7 +17,7 @@ describe("Pi agent dir paths", () => {
   });
 
   afterEach(() => {
-    process.env.HOME = originalHome;
+    restoreHomeEnv(originalHomeEnv);
     if (originalAgentDir === undefined) {
       delete process.env.PI_CODING_AGENT_DIR;
     } else {
@@ -42,7 +43,7 @@ describe("Pi agent dir paths", () => {
   it("uses PI_CODING_AGENT_DIR for Pi-owned config and state files", async () => {
     const home = mkdtempSync(join(tmpdir(), "pi-mcp-agent-dir-home-"));
     const agentDir = mkdtempSync(join(tmpdir(), "pi-mcp-agent-dir-"));
-    process.env.HOME = home;
+    setTestHome(home);
     process.env.PI_CODING_AGENT_DIR = agentDir;
     delete process.env.MCP_OAUTH_DIR;
 
@@ -66,7 +67,7 @@ describe("Pi agent dir paths", () => {
 
   it("expands tilde in PI_CODING_AGENT_DIR", async () => {
     const home = mkdtempSync(join(tmpdir(), "pi-mcp-agent-dir-home-"));
-    process.env.HOME = home;
+    setTestHome(home);
     process.env.PI_CODING_AGENT_DIR = "~/custom-pi-agent";
 
     const { getAgentDir } = await import("../agent-dir.ts");
@@ -78,7 +79,7 @@ describe("Pi agent dir paths", () => {
     const home = mkdtempSync(join(tmpdir(), "pi-mcp-agent-dir-home-"));
     const packageDir = mkdtempSync(join(tmpdir(), "pi-mcp-package-dir-"));
     const agentDir = mkdtempSync(join(tmpdir(), "pi-mcp-agent-dir-"));
-    process.env.HOME = home;
+    setTestHome(home);
     writeFileSync(join(packageDir, "package.json"), JSON.stringify({ piConfig: { name: "arc", configDir: ".arc" } }));
     process.env.PI_PACKAGE_DIR = packageDir;
 
@@ -100,7 +101,7 @@ describe("Pi agent dir paths", () => {
     const home = mkdtempSync(join(tmpdir(), "pi-mcp-agent-dir-home-"));
     const agentDir = mkdtempSync(join(tmpdir(), "pi-mcp-agent-dir-"));
     const oauthDir = mkdtempSync(join(tmpdir(), "pi-mcp-oauth-dir-"));
-    process.env.HOME = home;
+    setTestHome(home);
     process.env.PI_CODING_AGENT_DIR = agentDir;
     process.env.MCP_OAUTH_DIR = oauthDir;
 

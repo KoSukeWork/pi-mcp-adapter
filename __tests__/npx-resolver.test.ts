@@ -2,9 +2,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, utimesSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
+import { restoreHomeEnv, setTestHome, snapshotHomeEnv } from "./test-home.ts";
 
 describe("npx-resolver", () => {
-  const originalHome = process.env.HOME;
+  const originalHomeEnv = snapshotHomeEnv();
   const originalAgentDir = process.env.PI_CODING_AGENT_DIR;
   const originalNpmCache = process.env.NPM_CONFIG_CACHE;
 
@@ -15,7 +16,7 @@ describe("npx-resolver", () => {
 
   afterEach(() => {
     vi.doUnmock("node:fs");
-    process.env.HOME = originalHome;
+    restoreHomeEnv(originalHomeEnv);
     if (originalAgentDir === undefined) {
       delete process.env.PI_CODING_AGENT_DIR;
     } else {
@@ -33,7 +34,7 @@ describe("npx-resolver", () => {
     const agentDir = mkdtempSync(join(tmpdir(), "pi-mcp-npx-agent-"));
     const npmCache = mkdtempSync(join(tmpdir(), "pi-mcp-npx-cache-"));
 
-    process.env.HOME = home;
+    setTestHome(home);
     process.env.PI_CODING_AGENT_DIR = agentDir;
     process.env.NPM_CONFIG_CACHE = npmCache;
 
@@ -54,7 +55,7 @@ describe("npx-resolver", () => {
     const agentDir = mkdtempSync(join(tmpdir(), "pi-mcp-npx-agent-"));
     const npmCache = mkdtempSync(join(tmpdir(), "pi-mcp-npx-cache-"));
 
-    process.env.HOME = home;
+    setTestHome(home);
     process.env.PI_CODING_AGENT_DIR = agentDir;
     process.env.NPM_CONFIG_CACHE = npmCache;
 
@@ -78,7 +79,7 @@ describe("npx-resolver", () => {
     const agentDir = mkdtempSync(join(tmpdir(), "pi-mcp-npx-agent-"));
     const npmCache = mkdtempSync(join(tmpdir(), "pi-mcp-npx-cache-"));
 
-    process.env.HOME = home;
+    setTestHome(home);
     process.env.PI_CODING_AGENT_DIR = agentDir;
     process.env.NPM_CONFIG_CACHE = npmCache;
 
@@ -109,7 +110,7 @@ describe("npx-resolver", () => {
     const agentDir = mkdtempSync(join(tmpdir(), "pi-mcp-npx-agent-"));
     const npmCache = mkdtempSync(join(tmpdir(), "pi-mcp-npx-cache-"));
 
-    process.env.HOME = home;
+    setTestHome(home);
     process.env.PI_CODING_AGENT_DIR = agentDir;
     process.env.NPM_CONFIG_CACHE = npmCache;
 
@@ -146,7 +147,7 @@ describe("npx-resolver", () => {
     const agentDir = mkdtempSync(join(tmpdir(), "pi-mcp-npx-agent-"));
     const npmCache = mkdtempSync(join(tmpdir(), "pi-mcp-npx-cache-"));
 
-    process.env.HOME = home;
+    setTestHome(home);
     process.env.PI_CODING_AGENT_DIR = agentDir;
     process.env.NPM_CONFIG_CACHE = npmCache;
 
@@ -175,7 +176,7 @@ describe("npx-resolver", () => {
     const agentDir = mkdtempSync(join(tmpdir(), "pi-mcp-npx-agent-"));
     const npmCache = mkdtempSync(join(tmpdir(), "pi-mcp-npx-cache-"));
 
-    process.env.HOME = home;
+    setTestHome(home);
     process.env.PI_CODING_AGENT_DIR = agentDir;
     process.env.NPM_CONFIG_CACHE = npmCache;
 
@@ -203,7 +204,7 @@ describe("npx-resolver", () => {
     const agentDir = mkdtempSync(join(tmpdir(), "pi-mcp-npx-agent-"));
     const npmCache = mkdtempSync(join(tmpdir(), "pi-mcp-npx-cache-"));
 
-    process.env.HOME = home;
+    setTestHome(home);
     process.env.PI_CODING_AGENT_DIR = agentDir;
     delete process.env.NPM_CONFIG_CACHE;
 
@@ -226,7 +227,7 @@ describe("npx-resolver", () => {
     const agentDir = mkdtempSync(join(tmpdir(), "pi-mcp-npx-agent-"));
     const npmCache = mkdtempSync(join(tmpdir(), "pi-mcp-npx-cache-"));
 
-    process.env.HOME = home;
+    setTestHome(home);
     process.env.PI_CODING_AGENT_DIR = agentDir;
     delete process.env.NPM_CONFIG_CACHE;
 
@@ -261,7 +262,7 @@ describe("npx-resolver", () => {
     const agentDir = mkdtempSync(join(tmpdir(), "pi-mcp-npx-agent-"));
     const npmCache = mkdtempSync(join(tmpdir(), "pi-mcp-npx-cache-"));
 
-    process.env.HOME = home;
+    setTestHome(home);
     process.env.PI_CODING_AGENT_DIR = agentDir;
     process.env.NPM_CONFIG_CACHE = npmCache;
 
@@ -285,7 +286,7 @@ describe("npx-resolver", () => {
     const agentDir = mkdtempSync(join(tmpdir(), "pi-mcp-npx-agent-"));
     const npmCache = mkdtempSync(join(tmpdir(), "pi-mcp-npx-cache-"));
 
-    process.env.HOME = home;
+    setTestHome(home);
     process.env.PI_CODING_AGENT_DIR = agentDir;
     process.env.NPM_CONFIG_CACHE = npmCache;
 
@@ -307,7 +308,7 @@ describe("npx-resolver", () => {
     const agentDir = mkdtempSync(join(tmpdir(), "pi-mcp-npx-agent-"));
     const npmCache = mkdtempSync(join(tmpdir(), "pi-mcp-npx-cache-"));
 
-    process.env.HOME = home;
+    setTestHome(home);
     process.env.PI_CODING_AGENT_DIR = agentDir;
     process.env.NPM_CONFIG_CACHE = npmCache;
 
@@ -327,7 +328,7 @@ describe("npx-resolver", () => {
     const agentDir = mkdtempSync(join(tmpdir(), "pi-mcp-npx-agent-"));
     const npmCache = mkdtempSync(join(tmpdir(), "pi-mcp-npx-cache-"));
 
-    process.env.HOME = home;
+    setTestHome(home);
     process.env.PI_CODING_AGENT_DIR = agentDir;
     process.env.NPM_CONFIG_CACHE = npmCache;
 
@@ -349,7 +350,7 @@ describe("npx-resolver", () => {
       const agentDir = mkdtempSync(join(tmpdir(), "pi-mcp-npx-agent-"));
       const npmCache = mkdtempSync(join(tmpdir(), "pi-mcp-npx-cache-"));
 
-      process.env.HOME = home;
+      setTestHome(home);
       process.env.PI_CODING_AGENT_DIR = agentDir;
       process.env.NPM_CONFIG_CACHE = npmCache;
 
@@ -370,7 +371,7 @@ describe("npx-resolver", () => {
     const agentDir = mkdtempSync(join(tmpdir(), "pi-mcp-npx-agent-"));
     const npmCache = mkdtempSync(join(tmpdir(), "pi-mcp-npx-cache-"));
 
-    process.env.HOME = home;
+    setTestHome(home);
     process.env.PI_CODING_AGENT_DIR = agentDir;
     process.env.NPM_CONFIG_CACHE = npmCache;
 

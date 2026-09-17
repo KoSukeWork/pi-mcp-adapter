@@ -2,20 +2,21 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { existsSync, mkdtempSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
+import { restoreHomeEnv, setTestHome, snapshotHomeEnv } from "./test-home.ts";
 
 describe("onboarding state", () => {
-  const originalHome = process.env.HOME;
+  const originalHomeEnv = snapshotHomeEnv();
 
   beforeEach(() => {
     vi.resetModules();
   });
 
   afterEach(() => {
-    process.env.HOME = originalHome;
+    restoreHomeEnv(originalHomeEnv);
   });
 
   it("returns the default state when no file exists", async () => {
-    process.env.HOME = mkdtempSync(join(tmpdir(), "pi-mcp-onboarding-home-"));
+    setTestHome(mkdtempSync(join(tmpdir(), "pi-mcp-onboarding-home-")));
     const { loadOnboardingState, getOnboardingStatePath } = await import("../onboarding-state.ts");
 
     expect(loadOnboardingState()).toEqual({
@@ -27,7 +28,7 @@ describe("onboarding state", () => {
   });
 
   it("persists hint and setup completion state", async () => {
-    process.env.HOME = mkdtempSync(join(tmpdir(), "pi-mcp-onboarding-home-"));
+    setTestHome(mkdtempSync(join(tmpdir(), "pi-mcp-onboarding-home-")));
     const {
       markSharedConfigHintShown,
       markSetupCompleted,

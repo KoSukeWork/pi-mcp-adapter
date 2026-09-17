@@ -2,9 +2,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { tmpdir } from "node:os";
+import { restoreHomeEnv, setTestHome, snapshotHomeEnv } from "./test-home.ts";
 
 describe("oauth-handler token compatibility", () => {
-  const originalHome = process.env.HOME;
+  const originalHomeEnv = snapshotHomeEnv();
   const originalAgentDir = process.env.PI_CODING_AGENT_DIR;
   const originalOAuthDir = process.env.MCP_OAUTH_DIR;
 
@@ -13,7 +14,7 @@ describe("oauth-handler token compatibility", () => {
   });
 
   afterEach(() => {
-    process.env.HOME = originalHome;
+    restoreHomeEnv(originalHomeEnv);
     if (originalAgentDir === undefined) {
       delete process.env.PI_CODING_AGENT_DIR;
     } else {
@@ -51,7 +52,7 @@ describe("oauth-handler token compatibility", () => {
     const home = mkdtempSync(join(tmpdir(), "pi-mcp-oauth-handler-home-"));
     const agentDir = mkdtempSync(join(tmpdir(), "pi-mcp-oauth-handler-agent-"));
     const oauthDir = mkdtempSync(join(tmpdir(), "pi-mcp-oauth-handler-oauth-"));
-    process.env.HOME = home;
+    setTestHome(home);
     process.env.PI_CODING_AGENT_DIR = agentDir;
     process.env.MCP_OAUTH_DIR = oauthDir;
 

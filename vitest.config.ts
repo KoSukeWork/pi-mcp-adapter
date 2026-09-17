@@ -4,6 +4,7 @@ export default defineConfig({
   test: {
     globals: true,
     environment: "node",
+    setupFiles: ["./__tests__/vitest.setup.ts"],
     env: {
       PI_MCP_ADAPTER_TEST_AUTH_STORE: "memory",
       // Cache tests opt in explicitly to keep existing tests platform-neutral.

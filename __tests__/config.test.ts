@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { mkdtempSync, mkdirSync, readFileSync, realpathSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { tmpdir } from "node:os";
+import { restoreHomeEnv, setTestHome, snapshotHomeEnv } from "./test-home.ts";
 
 function writeJson(path: string, value: unknown): void {
   mkdirSync(dirname(path), { recursive: true });
@@ -9,7 +10,7 @@ function writeJson(path: string, value: unknown): void {
 }
 
 describe("config discovery", () => {
-  const originalHome = process.env.HOME;
+  const originalHomeEnv = snapshotHomeEnv();
   const originalPackageDir = process.env.PI_PACKAGE_DIR;
   const originalCwd = process.cwd();
 
@@ -18,7 +19,7 @@ describe("config discovery", () => {
   });
 
   afterEach(() => {
-    process.env.HOME = originalHome;
+    restoreHomeEnv(originalHomeEnv);
     if (originalPackageDir === undefined) {
       delete process.env.PI_PACKAGE_DIR;
     } else {
@@ -30,7 +31,7 @@ describe("config discovery", () => {
   it("drops malformed server entries at the config boundary", async () => {
     const home = mkdtempSync(join(tmpdir(), "pi-mcp-config-home-"));
     const project = mkdtempSync(join(tmpdir(), "pi-mcp-config-project-"));
-    process.env.HOME = home;
+    setTestHome(home);
     process.chdir(project);
 
     writeJson(join(project, ".mcp.json"), {
@@ -50,7 +51,7 @@ describe("config discovery", () => {
   it("loads Agent Plugin MCP servers from configured plugin paths", async () => {
     const home = mkdtempSync(join(tmpdir(), "pi-mcp-agent-plugin-home-"));
     const project = mkdtempSync(join(tmpdir(), "pi-mcp-agent-plugin-project-"));
-    process.env.HOME = home;
+    setTestHome(home);
     process.chdir(project);
 
     const plugin = join(project, "plugins", "acme-tools");
@@ -120,7 +121,7 @@ describe("config discovery", () => {
   it("skips invalid Agent Plugin MCP server entries without loading credentials or unsafe paths", async () => {
     const home = mkdtempSync(join(tmpdir(), "pi-mcp-agent-plugin-invalid-home-"));
     const project = mkdtempSync(join(tmpdir(), "pi-mcp-agent-plugin-invalid-project-"));
-    process.env.HOME = home;
+    setTestHome(home);
     process.chdir(project);
 
     const plugin = join(project, "plugins", "bad-plugin");
@@ -154,7 +155,7 @@ describe("config discovery", () => {
   it("does not let Agent Plugin normalized server-name collisions overwrite servers", async () => {
     const home = mkdtempSync(join(tmpdir(), "pi-mcp-agent-plugin-collision-home-"));
     const project = mkdtempSync(join(tmpdir(), "pi-mcp-agent-plugin-collision-project-"));
-    process.env.HOME = home;
+    setTestHome(home);
     process.chdir(project);
 
     const plugin = join(project, "plugins", "collision-plugin");
@@ -185,7 +186,7 @@ describe("config discovery", () => {
   it("loads standard MCP files first, then Pi overrides", async () => {
     const home = mkdtempSync(join(tmpdir(), "pi-mcp-config-home-"));
     const project = mkdtempSync(join(tmpdir(), "pi-mcp-config-project-"));
-    process.env.HOME = home;
+    setTestHome(home);
     process.chdir(project);
     const realProject = realpathSync(project);
 
@@ -244,7 +245,7 @@ describe("config discovery", () => {
     const home = mkdtempSync(join(tmpdir(), "pi-mcp-config-branded-home-"));
     const packageDir = mkdtempSync(join(tmpdir(), "pi-mcp-config-branded-package-"));
     const project = mkdtempSync(join(tmpdir(), "pi-mcp-config-branded-project-"));
-    process.env.HOME = home;
+    setTestHome(home);
     process.env.PI_PACKAGE_DIR = packageDir;
     process.chdir(project);
 
@@ -265,7 +266,7 @@ describe("config discovery", () => {
   it("replaces transport-specific fields when an override switches to or from a socket", async () => {
     const home = mkdtempSync(join(tmpdir(), "pi-mcp-config-home-"));
     const project = mkdtempSync(join(tmpdir(), "pi-mcp-config-project-"));
-    process.env.HOME = home;
+    setTestHome(home);
     process.chdir(project);
 
     writeJson(join(home, ".config", "mcp", "mcp.json"), {
@@ -293,7 +294,7 @@ describe("config discovery", () => {
   it("loads tool-agnostic .agents global MCP files before Pi overrides", async () => {
     const home = mkdtempSync(join(tmpdir(), "pi-mcp-agents-home-"));
     const project = mkdtempSync(join(tmpdir(), "pi-mcp-agents-project-"));
-    process.env.HOME = home;
+    setTestHome(home);
     process.chdir(project);
 
     writeJson(join(home, ".config", "mcp", "mcp.json"), {
@@ -345,7 +346,7 @@ describe("config discovery", () => {
   it("loads JSONC MCP config files with comments and trailing commas", async () => {
     const home = mkdtempSync(join(tmpdir(), "pi-mcp-jsonc-home-"));
     const project = mkdtempSync(join(tmpdir(), "pi-mcp-jsonc-project-"));
-    process.env.HOME = home;
+    setTestHome(home);
     process.chdir(project);
     const realProject = realpathSync(project);
 
@@ -405,7 +406,7 @@ describe("config discovery", () => {
   it("updates project Pi overrides that were hand-edited as JSONC", async () => {
     const home = mkdtempSync(join(tmpdir(), "pi-mcp-jsonc-write-home-"));
     const project = mkdtempSync(join(tmpdir(), "pi-mcp-jsonc-write-project-"));
-    process.env.HOME = home;
+    setTestHome(home);
     process.chdir(project);
 
     mkdirSync(join(project, ".pi"), { recursive: true });
@@ -452,7 +453,7 @@ describe("config discovery", () => {
   it("prefers modern Claude Code config detection over legacy paths", async () => {
     const home = mkdtempSync(join(tmpdir(), "pi-mcp-import-home-"));
     const project = mkdtempSync(join(tmpdir(), "pi-mcp-import-project-"));
-    process.env.HOME = home;
+    setTestHome(home);
     process.chdir(project);
     const realProject = realpathSync(project);
 
@@ -474,7 +475,7 @@ describe("config discovery", () => {
   it("keeps host discovery opt-in and reports active sources, precedence, conflicts, and provenance", async () => {
     const home = mkdtempSync(join(tmpdir(), "pi-mcp-host-discovery-home-"));
     const project = mkdtempSync(join(tmpdir(), "pi-mcp-host-discovery-project-"));
-    process.env.HOME = home;
+    setTestHome(home);
     process.chdir(project);
 
     writeJson(join(home, ".cursor", "mcp.json"), {
@@ -526,7 +527,7 @@ describe("config discovery", () => {
   it("reports the deterministic winning host provenance for same-name servers", async () => {
     const home = mkdtempSync(join(tmpdir(), "pi-mcp-host-collision-home-"));
     const project = mkdtempSync(join(tmpdir(), "pi-mcp-host-collision-project-"));
-    process.env.HOME = home;
+    setTestHome(home);
     process.chdir(project);
 
     writeJson(join(home, ".cursor", "mcp.json"), {
@@ -552,7 +553,7 @@ describe("config discovery", () => {
   it("classifies project Pi overrides as Pi-owned conflict sources", async () => {
     const home = mkdtempSync(join(tmpdir(), "pi-mcp-project-pi-conflict-home-"));
     const project = mkdtempSync(join(tmpdir(), "pi-mcp-project-pi-conflict-project-"));
-    process.env.HOME = home;
+    setTestHome(home);
     process.chdir(project);
 
     const sharedPath = join(home, ".config", "mcp", "mcp.json");
@@ -577,7 +578,7 @@ describe("config discovery", () => {
   it("imports Codex MCP servers from config.toml", async () => {
     const home = mkdtempSync(join(tmpdir(), "pi-mcp-codex-toml-home-"));
     const project = mkdtempSync(join(tmpdir(), "pi-mcp-codex-toml-project-"));
-    process.env.HOME = home;
+    setTestHome(home);
     process.chdir(project);
 
     writeJson(join(home, ".pi", "agent", "mcp.json"), {
@@ -620,7 +621,7 @@ describe("config discovery", () => {
   it("maps Codex HTTP authentication fields to adapter fields", async () => {
     const home = mkdtempSync(join(tmpdir(), "pi-mcp-codex-http-home-"));
     const project = mkdtempSync(join(tmpdir(), "pi-mcp-codex-http-project-"));
-    process.env.HOME = home;
+    setTestHome(home);
     process.chdir(project);
 
     writeJson(join(home, ".pi", "agent", "mcp.json"), { imports: ["codex"], mcpServers: {} });
@@ -651,7 +652,7 @@ describe("config discovery", () => {
   it("preserves invalid TOML warnings and JSON fallback in provenance", async () => {
     const home = mkdtempSync(join(tmpdir(), "pi-mcp-codex-fallback-provenance-home-"));
     const project = mkdtempSync(join(tmpdir(), "pi-mcp-codex-fallback-provenance-project-"));
-    process.env.HOME = home;
+    setTestHome(home);
     process.chdir(project);
     const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
 
@@ -677,7 +678,7 @@ describe("config discovery", () => {
   it("reports invalid TOML warnings while discovering the JSON fallback", async () => {
     const home = mkdtempSync(join(tmpdir(), "pi-mcp-codex-fallback-discovery-home-"));
     const project = mkdtempSync(join(tmpdir(), "pi-mcp-codex-fallback-discovery-project-"));
-    process.env.HOME = home;
+    setTestHome(home);
     process.chdir(project);
     const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
 
@@ -701,7 +702,7 @@ describe("config discovery", () => {
   it("keeps Codex JSON imports working when config.toml is absent", async () => {
     const home = mkdtempSync(join(tmpdir(), "pi-mcp-codex-json-home-"));
     const project = mkdtempSync(join(tmpdir(), "pi-mcp-codex-json-project-"));
-    process.env.HOME = home;
+    setTestHome(home);
     process.chdir(project);
 
     writeJson(join(home, ".pi", "agent", "mcp.json"), { imports: ["codex"], mcpServers: {} });
@@ -716,7 +717,7 @@ describe("config discovery", () => {
   it("merges partial Pi overrides into shared and imported server definitions", async () => {
     const home = mkdtempSync(join(tmpdir(), "pi-mcp-merge-home-"));
     const project = mkdtempSync(join(tmpdir(), "pi-mcp-merge-project-"));
-    process.env.HOME = home;
+    setTestHome(home);
     process.chdir(project);
 
     writeJson(join(home, ".config", "mcp", "mcp.json"), {
@@ -782,7 +783,7 @@ describe("config discovery", () => {
     baked: Record<string, unknown>,
     override: Record<string, unknown>,
   ): void {
-    process.env.HOME = home;
+    setTestHome(home);
     process.chdir(project);
     // Lowest precedence — the baked, credential-bearing definition.
     writeJson(join(home, ".config", "mcp", "mcp.json"), {
@@ -957,7 +958,7 @@ describe("config discovery", () => {
   it("does not launder auth across three sources when the top source changes the url", async () => {
     const home = mkdtempSync(join(tmpdir(), "pi-mcp-urlauth-3src-home-"));
     const project = mkdtempSync(join(tmpdir(), "pi-mcp-urlauth-3src-project-"));
-    process.env.HOME = home;
+    setTestHome(home);
     process.chdir(project);
 
     // Lowest precedence (shared-global): baked url + VK header.
@@ -986,7 +987,7 @@ describe("config discovery", () => {
   it("tracks provenance so project servers write locally and shared/imported servers write to Pi config", async () => {
     const home = mkdtempSync(join(tmpdir(), "pi-mcp-provenance-home-"));
     const project = mkdtempSync(join(tmpdir(), "pi-mcp-provenance-project-"));
-    process.env.HOME = home;
+    setTestHome(home);
     process.chdir(project);
     const realProject = realpathSync(project);
 
@@ -1055,7 +1056,7 @@ describe("config discovery", () => {
   it("summarizes discovery and detects RepoPrompt suggestions", async () => {
     const home = mkdtempSync(join(tmpdir(), "pi-mcp-summary-home-"));
     const project = mkdtempSync(join(tmpdir(), "pi-mcp-summary-project-"));
-    process.env.HOME = home;
+    setTestHome(home);
     process.chdir(project);
     const realProject = realpathSync(project);
 
@@ -1094,7 +1095,7 @@ describe("config discovery", () => {
   it("writes imported/global changes to Pi config and project changes to the project file", async () => {
     const home = mkdtempSync(join(tmpdir(), "pi-mcp-write-home-"));
     const project = mkdtempSync(join(tmpdir(), "pi-mcp-write-project-"));
-    process.env.HOME = home;
+    setTestHome(home);
     process.chdir(project);
 
     writeJson(join(home, ".config", "mcp", "mcp.json"), {
@@ -1136,7 +1137,7 @@ describe("config discovery", () => {
   it("builds real diff previews for compatibility imports and shared server writes", async () => {
     const home = mkdtempSync(join(tmpdir(), "pi-mcp-preview-home-"));
     const project = mkdtempSync(join(tmpdir(), "pi-mcp-preview-project-"));
-    process.env.HOME = home;
+    setTestHome(home);
     process.chdir(project);
 
     writeJson(join(home, ".pi", "agent", "mcp.json"), {
@@ -1153,7 +1154,7 @@ describe("config discovery", () => {
     } = await import("../config.ts");
 
     const importsPreview = previewCompatibilityImports(["cursor", "codex"]);
-    expect(importsPreview.path).toContain(".pi/agent/mcp.json");
+    expect(importsPreview.path).toContain(join(".pi", "agent", "mcp.json"));
     expect(importsPreview.changed).toBe(true);
     expect(importsPreview.diffText).toContain("+++ after");
     expect(importsPreview.diffText).toContain('+     "codex"');
@@ -1171,7 +1172,7 @@ describe("config discovery", () => {
   it("preserves the mcp toolPrefix setting from config files", async () => {
     const home = mkdtempSync(join(tmpdir(), "pi-mcp-prefix-home-"));
     const project = mkdtempSync(join(tmpdir(), "pi-mcp-prefix-project-"));
-    process.env.HOME = home;
+    setTestHome(home);
     process.chdir(project);
 
     writeJson(join(home, ".pi", "agent", "mcp.json"), {
@@ -1186,7 +1187,7 @@ describe("config discovery", () => {
   it("writes selected compatibility imports and a starter project config", async () => {
     const home = mkdtempSync(join(tmpdir(), "pi-mcp-setup-home-"));
     const project = mkdtempSync(join(tmpdir(), "pi-mcp-setup-project-"));
-    process.env.HOME = home;
+    setTestHome(home);
     process.chdir(project);
 
     const { ensureCompatibilityImports, getPiGlobalConfigPath, writeStarterProjectConfig } = await import("../config.ts");
@@ -1204,7 +1205,7 @@ describe("config discovery", () => {
   it("imports OpenCode servers from the global V1 config", async () => {
     const home = mkdtempSync(join(tmpdir(), "pi-mcp-opencode-global-home-"));
     const project = mkdtempSync(join(tmpdir(), "pi-mcp-opencode-global-project-"));
-    process.env.HOME = home;
+    setTestHome(home);
     process.chdir(project);
     writeJson(join(home, ".pi", "agent", "mcp.json"), { imports: ["opencode"], mcpServers: {} });
     writeJson(join(home, ".config", "opencode", "opencode.json"), {
@@ -1224,7 +1225,7 @@ describe("config discovery", () => {
   it("does not load OpenCode files without an explicit import", async () => {
     const home = mkdtempSync(join(tmpdir(), "pi-mcp-opencode-explicit-home-"));
     const project = mkdtempSync(join(tmpdir(), "pi-mcp-opencode-explicit-project-"));
-    process.env.HOME = home;
+    setTestHome(home);
     process.chdir(project);
     writeJson(join(home, ".config", "opencode", "opencode.json"), {
       mcp: { shouldNotLoad: { type: "local", command: ["unexpected"] } },
@@ -1237,7 +1238,7 @@ describe("config discovery", () => {
   it("imports OpenCode servers from the project V1 config", async () => {
     const home = mkdtempSync(join(tmpdir(), "pi-mcp-opencode-project-home-"));
     const project = mkdtempSync(join(tmpdir(), "pi-mcp-opencode-project-project-"));
-    process.env.HOME = home;
+    setTestHome(home);
     process.chdir(project);
     writeJson(join(home, ".pi", "agent", "mcp.json"), { imports: ["opencode"], mcpServers: {} });
     writeJson(join(project, "opencode.json"), {
@@ -1252,7 +1253,7 @@ describe("config discovery", () => {
   it("merges OpenCode global and project servers with nested project precedence", async () => {
     const home = mkdtempSync(join(tmpdir(), "pi-mcp-opencode-merge-home-"));
     const project = mkdtempSync(join(tmpdir(), "pi-mcp-opencode-merge-project-"));
-    process.env.HOME = home;
+    setTestHome(home);
     process.chdir(project);
     writeJson(join(home, ".pi", "agent", "mcp.json"), { imports: ["opencode"], mcpServers: {} });
     writeJson(join(home, ".config", "opencode", "opencode.json"), {
@@ -1309,7 +1310,7 @@ describe("config discovery", () => {
     const home = mkdtempSync(join(tmpdir(), "pi-mcp-opencode-nested-home-"));
     const project = mkdtempSync(join(tmpdir(), "pi-mcp-opencode-nested-project-"));
     const nested = join(project, "packages", "app");
-    process.env.HOME = home;
+    setTestHome(home);
     mkdirSync(join(project, ".git"));
     mkdirSync(nested, { recursive: true });
     process.chdir(nested);
@@ -1329,7 +1330,7 @@ describe("config discovery", () => {
   it("does not inherit remote credentials or local process secrets across identity changes", async () => {
     const home = mkdtempSync(join(tmpdir(), "pi-mcp-opencode-identity-home-"));
     const project = mkdtempSync(join(tmpdir(), "pi-mcp-opencode-identity-project-"));
-    process.env.HOME = home;
+    setTestHome(home);
     process.chdir(project);
     writeJson(join(home, ".pi", "agent", "mcp.json"), { imports: ["opencode"], mcpServers: {} });
     writeJson(join(home, ".config", "opencode", "opencode.json"), {
@@ -1365,7 +1366,7 @@ describe("config discovery", () => {
   it("reports the highest-precedence OpenCode file that parsed successfully", async () => {
     const home = mkdtempSync(join(tmpdir(), "pi-mcp-opencode-malformed-home-"));
     const project = mkdtempSync(join(tmpdir(), "pi-mcp-opencode-malformed-project-"));
-    process.env.HOME = home;
+    setTestHome(home);
     process.chdir(project);
     writeJson(join(home, ".pi", "agent", "mcp.json"), { imports: ["opencode"], mcpServers: {} });
     const globalPath = join(home, ".config", "opencode", "opencode.json");
